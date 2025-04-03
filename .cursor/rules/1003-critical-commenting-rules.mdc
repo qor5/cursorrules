@@ -1,0 +1,320 @@
+---
+description: FOLLOW these frequently violated commenting standards when WRITING CODE to PREVENT common mistakes that compromise code quality
+globs: *
+alwaysApply: true
+---
+# Critical Commenting Rules
+
+<version>1.1.0</version>
+
+## Context
+- Apply when writing or reviewing any code
+- These principles aim to maintain clean, readable code with minimal necessary comments
+- Follow these principles STRICTLY at all times
+- Created to address repeatedly violated commenting standards
+
+## Requirements
+- All code comments MUST be written in English, regardless of the primary language used in conversation
+- Code should be self-explanatory through clear naming and logical structure
+- Comments should explain "why" rather than "what" or "how" when the code is not self-explanatory
+- Only add comments when necessary to explain:
+  - Complex algorithms or non-obvious logic
+  - Business logic reasoning that cannot be expressed in code
+  - Public API documentation
+  - Warning about edge cases or subtle behaviors
+- Avoid "over-commenting" in the following situations:
+  - When comments merely repeat what the method/variable name already tells us
+  - When describing simple logic that is already clear from the code
+  - When adding internal step-by-step descriptions of straightforward operations
+  - When adding comments to internal/private methods with clear names
+- For exported interfaces and types, provide documentation comments, but keep them concise
+- Delete commented-out code instead of leaving it in the codebase
+
+## Examples
+
+### Example: Proper English comments with appropriate detail level
+
+All comments should be written in English as required:
+
+```go
+// UserRepository handles database operations for user entities
+type UserRepository struct {
+	db *sql.DB
+}
+
+// FindByID retrieves a user from the database by their unique identifier.
+// Returns nil and ErrUserNotFound if the user doesn't exist.
+func (r *UserRepository) FindByID(ctx context.Context, id string) (*User, error) {
+	user, err := r.queryUser("SELECT * FROM users WHERE id = $1", id)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find user")
+	}
+	
+	return user, nil
+}
+
+func (r *UserRepository) validateUser(u *User) error {
+	if u.Name == "" {
+		return ErrInvalidUserName
+	}
+	return nil
+}
+```
+
+Note how private methods don't need comments when their purpose is clear from the name.
+
+### Example: Informative comments for complex algorithms
+
+Comments should be in English and explain the approach:
+
+```go
+// This function implements the QuickSort algorithm to sort the input slice
+func QuickSort(arr []int, low, high int) {
+	if low < high {
+		pi := partition(arr, low, high)
+		
+		// Recursively sort elements before and after partition
+		QuickSort(arr, low, pi-1)
+		QuickSort(arr, pi+1, high)
+	}
+}
+
+func partition(arr []int, low, high int) int {
+	pivot := arr[high]
+	i := low - 1
+	
+	for j := low; j <= high-1; j++ {
+		if arr[j] < pivot {
+			i++
+			arr[i], arr[j] = arr[j], arr[i]
+		}
+	}
+	
+	arr[i+1], arr[high] = arr[high], arr[i+1]
+	return i + 1
+}
+```
+
+### Example: Proper interface and implementation comments
+
+Comments provide information beyond what the method name suggests:
+
+```go
+// SQLDialect defines dialect-specific SQL generation behavior
+type SQLDialect interface {
+    // And combines queries with AND operator
+    And(queries []string) string
+    // Or combines queries with OR operator
+    Or(queries []string) string
+    // Not applies NOT operator to a query
+    Not(query string) string
+}
+
+// BigQuerySQLDialect implements the SQLDialect interface for BigQuery
+var _ SQLDialect = &BigQuerySQLDialect{}
+
+type BigQuerySQLDialect struct{}
+
+func NewBigQuerySQLDialect() *BigQuerySQLDialect {
+    return &BigQuerySQLDialect{}
+}
+
+// And uses INTERSECT DISTINCT to find the intersection of result sets
+func (d *BigQuerySQLDialect) And(queries []string) string {
+    if len(queries) == 0 {
+        return ""
+    }
+
+    if len(queries) == 1 {
+        return queries[0]
+    }
+
+    return strings.Join(queries, " INTERSECT DISTINCT ")
+}
+```
+
+### Example: Informative constant comments
+
+The constant names are already clear enough, comments can be omitted entirely:
+
+```go
+type FragmentType string
+
+const (
+	FragmentDatePicker  FragmentType = "datePicker"
+	FragmentNumberInput FragmentType = "numberInput"
+	FragmentTextInput   FragmentType = "textInput"
+	FragmentSelect      FragmentType = "select"
+	FragmentMultiSelect FragmentType = "multiSelect"
+	FragmentIcon        FragmentType = "icon"
+)
+```
+
+For constant definitions, comments should:
+1. Provide additional information that cannot be directly inferred from the name
+2. Explain the purpose or special behavior of the constant
+3. Not merely repeat the constant name
+4. Be omitted entirely if the value mapping is already obvious
+
+### Example: INVALID - Non-English comments
+
+This example violates the rule requiring comments to be in English:
+
+```go
+// 这个结构体表示用户仓库
+type UserRepository struct {
+	db *sql.DB // 数据库连接
+}
+
+// 通过ID查找用户
+// 参数是用户ID
+// 返回用户和错误
+func (r *UserRepository) FindByID(ctx context.Context, id string) (*User, error) {
+	// 使用预处理语句防止SQL注入
+	user, err := r.queryUser("SELECT * FROM users WHERE id = $1", id)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find user")
+	}
+	
+	return user, nil
+}
+```
+
+### Example: INVALID - Over-commenting in English
+
+This example shows over-commenting despite using English:
+
+```go
+// This function calculates the sum of all elements in an array
+func Sum(arr []int) int {
+    // Initialize the sum to zero
+    sum := 0
+    
+    // Loop through each element in the array
+    for _, num := range arr {
+        // Add the current element to the sum
+        sum += num
+    }
+    
+    // Return the total sum
+    return sum
+}
+
+// IsAdminUser checks if a user has admin privileges
+func IsAdminUser(user *User) bool {
+    // Return true if the user role is "admin", otherwise return false
+    return user.Role == "admin"
+}
+```
+
+### Example: INVALID - Interface implementation with redundant comments
+
+This example shows redundant interface implementation comments:
+
+```go
+// SQLDialect defines dialect-specific SQL generation behavior
+type SQLDialect interface {
+    // And combines queries with AND operator
+    And(queries []string) string
+    // Or combines queries with OR operator
+    Or(queries []string) string
+    // Not applies NOT operator to a query
+    Not(query string) string
+}
+
+// BigQuerySQLDialect implements SQLDialect for BigQuery SQL syntax
+var _ SQLDialect = &BigQuerySQLDialect{}
+
+type BigQuerySQLDialect struct{}
+
+// NewBigQuerySQLDialect creates a new BigQuerySQLDialect
+func NewBigQuerySQLDialect() *BigQuerySQLDialect {
+    return &BigQuerySQLDialect{}
+}
+
+// And combines SQL queries with AND operator for BigQuery
+// Uses INTERSECT DISTINCT for combining queries
+func (d *BigQuerySQLDialect) And(queries []string) string {
+    // For BigQuery, we need each query to be a complete subquery
+    if len(queries) == 0 {
+        // Return empty string for empty queries
+        return ""
+    }
+
+    if len(queries) == 1 {
+        // Return the single query directly
+        return queries[0]
+    }
+
+    // Join with INTERSECT DISTINCT
+    return strings.Join(queries, " INTERSECT DISTINCT ")
+}
+```
+
+### Example: INVALID - Redundant constant comments that repeat the name
+
+This example shows over-commented enum constants where comments merely repeat the constant name without providing additional information:
+
+```go
+type FragmentType string
+
+const (
+	FragmentDatePicker  FragmentType = "datePicker"  // Date picker
+	FragmentNumberInput FragmentType = "numberInput" // Number input
+	FragmentTextInput   FragmentType = "textInput"   // Text input
+	FragmentSelect      FragmentType = "select"      // Dropdown select
+	FragmentMultiSelect FragmentType = "multiSelect" // Multi-select
+	FragmentIcon        FragmentType = "icon"        // Icon
+)
+```
+
+## Language Requirements for Comments
+
+All code comments MUST be written in English:
+
+- BAD: `// 使用预处理语句防止SQL注入`
+- GOOD: `// Use prepared statement to prevent SQL injection
+
+This requirement applies regardless of:
+- The primary language used in conversation
+- The team's native language
+- The geographical location of development
+
+## Common Over-Commenting Patterns to Avoid
+
+1. **Method Name Repetition**
+   - BAD: `// NewUser creates a new user`
+   - GOOD: Either no comment (if simple) or explain special behavior
+
+2. **Obvious Implementation Comments**
+   - BAD: `// Return true if x is greater than y, otherwise return false`
+   - GOOD: No comment needed for obvious logic
+
+3. **Step-by-step Internal Comments**
+   - BAD: Adding a comment before each line in a simple method
+   - GOOD: Let the code speak for itself through clear variable/function names
+
+4. **Constructor Method Comments**
+   - BAD: `// NewBigQuerySQLDialect creates a new BigQuerySQLDialect`
+   - GOOD: Either no comment or explain configuration/initialization details
+
+5. **Interface Implementation Details**
+   - BAD: `// And combines SQL queries with AND operator` (merely repeats interface definition)
+   - GOOD: `// And uses INTERSECT DISTINCT to find the intersection of result sets` (explains implementation details)
+
+## When Comments Are Necessary
+
+1. **Complex Algorithms**: Explain the approach and key steps
+2. **Business Rules**: Explain why certain conditions or thresholds exist
+3. **Non-obvious Optimizations**: Explain why a non-standard approach was chosen
+4. **Security Considerations**: Document security-related decisions or precautions
+5. **Interface Contracts**: Document expected behaviors, constraints, and error conditions
+
+## Best Practices
+
+- Let the code speak for itself through clear naming and structure
+- Comment on "why" rather than "what" or "how" when the code is not self-explanatory
+- Document public APIs and interfaces concisely
+- Delete commented-out code instead of leaving it in the codebase
+- Update comments when updating the corresponding code
+- Always write comments in English regardless of the conversation language

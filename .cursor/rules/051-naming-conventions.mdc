@@ -1,0 +1,38 @@
+---
+description: FOLLOW naming convention standards when WRITING CODE to ENSURE readability and maintainability
+globs: **/*.{go,js,jsx,ts,tsx}
+alwaysApply: false
+---
+# Naming Conventions
+
+## Context
+- Applied when writing any code or documentation in the project
+- Applies to all variables, functions, methods, classes, interfaces, and comments
+
+## Requirements
+- Always use English for code, comments, and documentation
+- Variable names should not end with numbers unless necessary (e.g., when distinguishing similar variables)
+- Use descriptive variable/function names that clearly express their purpose
+- Prioritize code readability first
+
+## Examples
+<example>
+// Good
+const userProfile = fetchUserData();
+function calculateTotalPrice(items, taxRate) {...}
+
+// Go example
+func ProcessUserRequest(request UserRequest) Response {...}
+</example>
+
+<example type="invalid">
+// Bad: non-descriptive name with unnecessary number suffix
+const data1 = fetchData();
+
+// Bad: non-English variable name
+const 用户数据 = fetchUserData();
+
+// Bad: over-commenting obvious code
+// Initialize counter to zero
+let counter = 0; // Counter starts at zero
+</example>

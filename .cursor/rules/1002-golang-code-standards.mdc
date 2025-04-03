@@ -1,0 +1,418 @@
+---
+description: FOLLOW Go code standards when WRITING GO CODE to ENSURE consistency and maintainability
+globs: **/*.go
+alwaysApply: false
+---
+
+# Go Code Standards
+
+<version>1.0.0</version>
+
+## Context
+
+- Applied when writing or reviewing Go code
+- Ensures consistency across the codebase
+- Improves readability and maintainability
+
+## Requirements
+
+- Use uppercase with underscores for string enum constants
+- Use camelCase for JSON tags
+- Avoid using omitempty in JSON tags by default
+- Use `any` instead of `interface{}`
+- Include context.Context as first parameter in IO operations
+- Use github.com/pkg/errors for error handling
+- Wrap third-party and standard library errors, but not internal errors
+- Write acronyms in all uppercase in identifiers
+- Add type validation declarations for all interface implementations (e.g., `var _ InterfaceName = &ImplementationType{}`)
+
+## Examples
+
+### String Enum Naming
+
+<example>
+
+```go
+// Enum type definition
+type FragmentType string
+
+// Enum constant definition - variable names use camelCase, string values use UPPERCASE_WITH_UNDERSCORES
+const (
+    FragmentDatePicker  FragmentType = "DATE_PICKER"
+    FragmentNumberInput FragmentType = "NUMBER_INPUT"
+    FragmentTextInput   FragmentType = "TEXT_INPUT"
+    FragmentSelect      FragmentType = "SELECT"
+    FragmentIcon        FragmentType = "ICON"
+)
+```
+
+For string enums:
+
+1. Enum variable names should use camelCase (e.g., `FragmentTextInput`)
+2. Enum string values should use UPPERCASE_WITH_UNDERSCORES (e.g., `"TEXT_INPUT"`)
+
+</example>
+
+<example type="invalid">
+
+```go
+// INVALID: Don't use lowercase for variable names, and string values should not use lowercase or camelCase
+const (
+    fragmentDatePicker  = "datePicker"
+    fragmentNumberInput = "numberInput"
+    fragmentTextInput   = "textInput"
+    fragmentSelect      = "select"
+    fragmentMultiSelect = "multiSelect"
+    fragmentIcon        = "icon"
+)
+```
+
+```go
+// INVALID: Don't use UPPERCASE_WITH_UNDERSCORES for variable names,
+// and string values should use UPPERCASE_WITH_UNDERSCORES instead of camelCase
+const (
+    FRAGMENT_DATE_PICKER  FragmentType = "datePicker"
+    FRAGMENT_NUMBER_INPUT FragmentType = "numberInput"
+    FRAGMENT_TEXT_INPUT   FragmentType = "textInput"
+    FRAGMENT_SELECT       FragmentType = "select"
+    FRAGMENT_MULTI_SELECT FragmentType = "multiSelect"
+    FRAGMENT_ICON         FragmentType = "icon"
+)
+```
+
+</example>
+
+### JSON Tag Naming
+
+<example>
+```go
+type User struct {
+    FirstName string `json:"firstName"`
+    LastName  string `json:"lastName"`
+    Email     string `json:"email"`
+}
+```
+JSON tags should use camelCase to maintain consistency with JavaScript conventions.
+</example>
+
+<example type="invalid">
+```go
+type User struct {
+    FirstName string `json:"first_name"`
+    LastName  string `json:"last_name"`
+    Email     string `json:"email"`
+}
+```
+Do not use snake_case for JSON tags.
+</example>
+
+<example type="invalid">
+```go
+type Request struct {
+	SegmentID   string `json:"segmentId"`
+}
+```
+Don't use mixed case for acronyms.
+Should use `segmentID` for this case.
+</example>
+
+<example type="invalid">
+```go
+type Request struct {
+    SESContent  string `json:"SESContent"`
+}
+```
+Acronyms should be lowercase if they come at the beginning of a word.
+Should use `sesContent` for this case.
+</example>
+
+### JSON Tag Options
+
+<example>
+```go
+type Product struct {
+    ID    string  `json:"id"`
+    Name  string  `json:"name"`
+    Price float64 `json:"price"`
+    Stock *int    `json:"stock"`
+}
+```
+By default, omit the omitempty tag option for clarity and predictability.
+</example>
+
+<example type="invalid">
+```go
+type Product struct {
+    ID    string  `json:"id,omitempty"`
+    Name  string  `json:"name,omitempty"`
+    Price float64 `json:"price,omitempty"`
+    Stock *int    `json:"stock,omitempty"`
+}
+```
+Don't use omitempty by default.
+</example>
+
+### Type Declarations
+
+<example>
+```go
+func ProcessData(data any) any {
+    // Process data
+    return result
+}
+
+var config map[string]any
+
+````
+Use `any` type instead of `interface{}` for better readability in Go 1.18+.
+</example>
+
+<example type="invalid">
+```go
+func ProcessData(data interface{}) interface{} {
+    // Process data
+    return result
+}
+
+var config map[string]interface{}
+````
+
+Avoid using `interface{}` as it's more verbose than `any`.
+</example>
+
+### Context and Error Handling
+
+<example>
+```go
+func FetchUserData(ctx context.Context, userID string) (*UserData, error) {
+    // Database operation or API call
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to fetch user data")
+    }
+    return userData, nil
+}
+```
+IO operations should include context as first parameter and return an error.
+</example>
+
+<example type="invalid">
+```go
+func FetchUserData(userID string) (*UserData, error) {
+    // Database operation or API call without context
+    if err != nil {
+        return nil, err
+    }
+    return userData, nil
+}
+```
+Missing context parameter and unwrapped error in IO operation.
+</example>
+
+### Error Library Usage
+
+<example>
+```go
+import (
+    "github.com/pkg/errors"
+)
+
+func processFile(filename string) error {
+data, err := ioutil.ReadFile(filename)
+if err != nil {
+return errors.Wrap(err, "reading file failed")
+}
+
+    if err := parseData(data); err != nil {
+        return errors.Wrap(err, "parsing data failed")
+    }
+
+    return nil
+
+}
+
+````
+Use github.com/pkg/errors for all error handling to provide stack traces.
+</example>
+
+<example type="invalid">
+```go
+import (
+    "errors"
+    "fmt"
+)
+
+func processFile(filename string) error {
+    data, err := ioutil.ReadFile(filename)
+    if err != nil {
+        return fmt.Errorf("reading file failed: %v", err)
+    }
+
+    if err := parseData(data); err != nil {
+        return errors.New("parsing data failed: " + err.Error())
+    }
+
+    return nil
+}
+````
+
+Don't use standard library errors or fmt.Errorf for error wrapping.
+</example>
+
+### Error Wrapping
+
+<example>
+```go
+// Standard library errors should be wrapped
+file, err := os.Open(path)
+if err != nil {
+    return errors.Wrap(err, "failed to open file")
+}
+
+// Third-party library errors should be wrapped
+resp, err := http.Get(url)
+if err != nil {
+return errors.Wrap(err, "failed to fetch data")
+}
+
+// Project-internal errors don't need rewrapping
+data, err := fetchUserData(ctx, userID)
+if err != nil {
+return err // Already wrapped appropriately
+}
+
+````
+Wrap external errors but pass through internal errors to avoid double-wrapping.
+</example>
+
+<example type="invalid">
+```go
+// Unwrapped standard library error
+file, err := os.Open(path)
+if err != nil {
+    return err
+}
+
+// Unwrapped third-party library error
+resp, err := http.Get(url)
+if err != nil {
+    return err
+}
+
+// Unnecessarily wrapped internal error
+data, err := fetchUserData(ctx, userID)
+if err != nil {
+    return errors.Wrap(err, "failed to fetch user data")
+}
+````
+
+Don't return unwrapped external errors or rewrap internal errors.
+</example>
+
+### Acronym Naming
+
+<example>
+```go
+type UserID string
+
+func GetHTTPClient() \*http.Client {
+// Return HTTP client
+}
+
+type SMSNotification struct {
+ID string
+UserID string
+SMSBody string
+APISource string
+}
+
+````
+Acronyms (ID, HTTP, SMS, API) should be all uppercase in identifiers.
+</example>
+
+<example type="invalid">
+```go
+type UserId string
+
+func GetHttpClient() *http.Client {
+    // Return HTTP client
+}
+
+type SmsNotification struct {
+    Id        string
+    UserId    string
+    SmsBody   string
+    ApiSource string
+}
+````
+
+Don't use mixed case for acronyms in identifiers.
+</example>
+
+### Interface Implementation Validation
+
+<example>
+```go
+// UserService interface definition
+type UserService interface {
+    FindByID(ctx context.Context, id string) (*User, error)
+    Create(ctx context.Context, user *User) error
+    Update(ctx context.Context, user *User) error
+    Delete(ctx context.Context, id string) error
+}
+
+// Add validation declaration before the implementation struct
+var _ UserService = &PostgresUserService{}
+
+// PostgresUserService is a PostgreSQL implementation of UserService
+type PostgresUserService struct {
+    db *sql.DB
+}
+
+// SQLDialect interface definition
+type SQLDialect interface {
+    And(queries []string) string
+    Or(queries []string) string
+    Not(query string) string
+}
+
+// Multiple interface implementations can use a var block
+var (
+    _ SQLDialect = &PostgreSQLDialect{}
+    _ SQLDialect = &MySQLDialect{}
+    _ SQLDialect = &BigQueryDialect{}
+)
+
+// BigQueryDialect implements the SQLDialect interface
+type BigQueryDialect struct{}
+```
+
+These type validation declarations ensure that implementation types correctly implement the interfaces, catching errors at compile time rather than runtime.
+</example>
+
+<example type="invalid">
+```go
+// Missing interface implementation validation declaration
+type PostgresUserService struct {
+    db *sql.DB
+}
+
+// Interface implementation errors won't be caught at compile time
+func (s *PostgresUserService) FindByID(id string) (*User, error) {
+    // Note: Missing ctx context.Context parameter, but without validation declaration, this error is ignored
+    // ...
+}
+
+// Without validation declarations, implementation of multiple interfaces can cause confusion
+type SQLProcessor struct {
+    dialect Dialect
+}
+```
+
+Without type validation declarations, the compiler cannot verify at compile time whether types correctly implement interfaces, potentially leading to runtime errors.
+</example>
+
+## Best Practices
+
+- Ensure these standards are checked during code reviews
+- Consider using static analysis tools to enforce these standards
+- Regularly update team members on these standards, especially when new members join

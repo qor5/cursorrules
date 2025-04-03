@@ -1,0 +1,64 @@
+---
+description: FOLLOW test writing standards when WRITING TESTS to ENSURE compatibility with existing code
+globs: **/*test*.{js,ts,go,py,rb,java,cs,php,rs,cpp,c,jsx,tsx}
+alwaysApply: false
+---
+
+# Test Writing Standards
+
+<version>1.0.0</version>
+
+## Context
+- When writing or modifying test code for any codebase
+- When fixing failing tests or compilation errors in test files
+- When troubleshooting test-related issues
+
+## Requirements
+
+### Test Execution and Verification
+- Run modified tests after fixing compilation errors to verify they pass
+- Verify that tests are running against the correct implementation
+- Use appropriate assertions to validate expected outcomes
+
+### Code Modification Boundaries
+- Never modify non-test files to make tests pass
+- Only modify test code to match the existing implementation logic
+- Stop and report to user if unable to make tests pass without modifying non-test files
+
+### Error Resolution
+- Start with the simplest possible fix that respects existing code
+
+### Cross-Language Considerations
+- Apply language-specific testing patterns while following these universal principles
+- Use appropriate testing libraries for different languages (e.g., Jest for JS, testify for Go)
+
+## Examples
+
+<example>
+// Before - Test failing due to wrong expectation
+test("getUser returns user data", async () => {
+  const result = await getUser(123)
+  expect(result.id).toBe(456) // Incorrect expectation
+})
+
+// After - Test modified to match actual implementation
+test("getUser returns user data", async () => {
+  const result = await getUser(123)
+  expect(result.id).toBe(123) // Updated to match implementation
+})
+</example>
+
+<example type="invalid">
+// Before - Function implementation
+function calculateTotal(items) {
+  return items.reduce((sum, item) => sum + item.price, 0)
+}
+
+// Invalid approach - Changing implementation to match test
+function calculateTotal(items) {
+  // Changed implementation to match failing test
+  return items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+}
+
+// Correct approach: Keep implementation unchanged and update test instead
+</example>

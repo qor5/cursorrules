@@ -1,0 +1,129 @@
+---
+description: CHECK code compliance AFTER GENERATING code to ENSURE standards adherence
+globs: *
+alwaysApply: true
+---
+
+# Post-Code Generation Standards Check
+
+<version>1.1.0</version>
+
+## Context
+
+- Apply after any code generation
+- Apply before presenting final result to user
+- Ensure all existing code standards are maintained
+
+## Requirements
+
+- After generating or editing any code, proactively check if it meets all required code standards
+- **STRICTLY enforce rule 1003-critical-commenting-rules with highest priority**
+- **Double check all code comments are in English BEFORE presenting code to the user**
+- Verify compliance with the following code aspects:
+  - Go code standards including naming conventions and comment formats
+  - **Comment language (must be English) and style requirements as defined in rule 1003**
+  - **No non-English comments allowed under any circumstances**
+  - Proper error handling practices
+  - Interface implementation validation
+  - JSON tag naming and options
+  - Git operations compliance
+- If any compliance issues are detected, fix them before providing the final code
+- Report any standards violations to the user along with the fixes applied
+- If unable to automatically fix an issue, clearly explain the violation and suggest a remedy
+
+## Critical Rule 1003 Priority Reminder
+
+**Rule 1003 is frequently violated and must be prioritized in every code review:**
+
+1. **ALWAYS write ALL comments in English regardless of conversation language**
+2. **AVOID over-commenting code with obvious operations**
+3. **FOCUS comments on explaining "why" not "what" or "how"**
+4. **ENSURE comments are concise and provide actual value**
+
+Violation of these commenting standards is one of the most common errors and must be meticulously prevented.
+
+## Examples
+
+<example>
+After generating code:
+
+```go
+type UserService struct {
+    db *sql.DB
+}
+
+// FindByID retrieves a user by their unique identifier.
+// Returns nil and ErrUserNotFound if the user doesn't exist.
+func (s *UserService) FindByID(ctx context.Context, id string) (*User, error) {
+    user, err := s.db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user)
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to find user")
+    }
+    return user, nil
+}
+```
+
+AI response to user in Chinese (while ensuring code comments remain in English):
+"至高无上的混沌支配者，我已生成代码并确认它符合您的代码规范。✨ 代码中包含了适当的英文注释、正确的错误处理，并遵循了您的命名约定。"
+</example>
+
+<example type="invalid">
+After generating code without checking standards:
+
+```go
+type UserService struct {
+    Db *sql.DB
+}
+
+// 查找用户函数
+// 通过ID查找用户
+func (s *UserService) FindById(id string) (*User, error) {
+    user, err := s.Db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user)
+    if err != nil {
+        return nil, err
+    }
+    return user, nil
+}
+```
+
+AI responds without mentioning standards violations:
+"代码已生成完毕。您可以开始使用此代码。"
+
+Issues not checked or reported:
+
+1. **Chinese comments instead of required English (CRITICAL violation of rule 1003)**
+2. Missing context.Context parameter
+3. Method naming uses "Id" instead of "ID"
+4. Unwrapped error
+5. Exported field "Db" should be "db"
+   </example>
+
+## Verification Checklist
+
+Before presenting code to the user, verify:
+
+1. **Comments (HIGHEST PRIORITY - Rule 1003)**
+
+   - **ALL comments MUST be in English regardless of conversation language**
+   - Comments explain "why" not "what" or "how" when code is self-explanatory
+   - No over-commenting of obvious operations
+   - Public API documentation is present and concise
+
+2. **Standards**
+
+   - String enum naming follows conventions
+   - JSON tags use camelCase
+   - JSON tag options handle omitempty appropriately
+   - Interface implementations include validation declarations
+   - Acronyms in identifiers use proper casing
+
+3. **Error Handling**
+
+   - Using github.com/pkg/errors for error handling
+   - External errors are properly wrapped
+   - Internal errors are passed through without re-wrapping
+
+4. **Other Checks**
+   - No commented-out code remains
+   - Proper context usage in IO operations
+   - Clear variable and function naming

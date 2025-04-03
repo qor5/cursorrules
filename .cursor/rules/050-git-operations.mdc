@@ -1,0 +1,53 @@
+---
+description: FOLLOW strict git operation guidelines when EXECUTING git commands to ENSURE consistency and control
+globs: **/*.{js,jsx,ts,tsx,go,md,json,yml,yaml,css,scss,html}
+alwaysApply: true
+---
+
+# Git Operations Guidelines
+
+<version>1.0.0</version>
+
+## Context
+- Apply when executing git commands or commits
+- Apply when user requests assistance with git operations
+- Apply throughout the entire codebase
+
+## Requirements
+- Never execute git operations after code modifications without explicit request
+- Only perform git operations when specifically requested by the user
+- Always generate commit messages in English, regardless of conversation language
+- Create concise, focused commit messages that highlight key changes
+
+## Examples
+
+<example>
+User: "帮我提交这些更改到git"
+
+AI Response: "我可以帮您生成提交信息，但需要您确认执行。建议的提交信息如下：
+
+```
+feat: add user authentication functionality
+
+- Implement login/logout flows
+- Add session management
+- Create protected routes
+```
+
+您可以使用以下命令提交：
+git add .
+git commit -m 'feat: add user authentication functionality'
+"
+</example>
+
+<example type="invalid">
+User: "我刚刚修改了这些代码，看起来怎么样？"
+
+AI Response: "代码看起来不错！我已经帮您将这些更改提交到git：
+git add .
+git commit -m '修改用户认证代码'
+git push origin main
+"
+
+错误原因：AI未经明确请求就执行了git操作，并且使用了非英文的提交信息。
+</example> 
