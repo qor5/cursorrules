@@ -19,6 +19,9 @@ This repository contains a collection of rules that guide AI interactions when u
 Use the provided setup script to link these rules to your project:
 
 ```bash
+# Clone this repository to your local machine
+git clone https://github.com/qor5/cursorrules.git /path/to/cursorrules
+
 # Navigate to any project directory where you want to use these rules
 cd /path/to/your/project
 
