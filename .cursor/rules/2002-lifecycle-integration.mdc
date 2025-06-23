@@ -88,8 +88,7 @@ func setupHTTPServer(lc *lifecycle.Lifecycle, conf *Config, handler http.Handler
 
 // 主命令
 func main() {
-    lc := lifecycle.New()
-    if err := lc.Provide(
+    if err := lifecycle.Serve(context.Background(),
         lifecycle.SetupSignal,
         func(ctx inject.Context) (*Config, error) {
             return configLoader(ctx, configPath)
@@ -101,7 +100,6 @@ func main() {
     ); err != nil {
         log.Fatal(err)
     }
-    lc.Serve(context.Background())
 }
 ```
 </example>
