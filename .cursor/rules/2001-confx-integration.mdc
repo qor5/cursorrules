@@ -1,0 +1,238 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Confx 配置集成
+
+<version>1.0.0</version>
+
+## 上下文
+- 构建需要配置管理的 Go 应用程序时应用
+- 设置带有结构化配置的命令行应用程序时应用
+- 从基于环境变量的配置迁移时应用
+
+## 要求
+
+### 文件组织结构
+```
+cmd/
+├── main.go          # 程序入口，定义 rootCmd
+├── config.go        # 配置结构体和初始化函数
+├── provider.go      # 依赖提供者函数
+├── serve.go         # serve 命令实现
+└── embed/
+    └── default-config.yaml  # 默认配置文件
+```
+
+### 配置结构
+- 定义单个根配置结构体，包含嵌套配置
+- 为所有配置字段使用 `confx` 标签，采用 snake_case 命名
+- 为必需字段和格式验证添加 `validate` 标签
+- 直接在根配置中嵌入外部配置结构体
+
+### 默认配置模式
+- 创建包含全面默认值的 `embed/default-config.yaml`
+- 使用 `//go:embed embed/default-config.yaml` 嵌入 YAML
+- 使用 `confx.Read` 和 `confx.Initialize` 初始化 confx 与嵌入默认值
+- 支持带有一致前缀的环境变量（如 `APP_`）
+- 通过 `pflag.FlagSet` 支持命令行标志
+
+### 验证规则
+- 对必需字段使用 `validate:"required"`
+- 对必需邮箱字段使用 `validate:"required,email"`
+- 对可选邮箱字段使用 `validate:"omitempty,email"`
+- 对邮箱数组使用 `validate:"dive,email"`
+- 为 URL、端口和其他特定格式字段添加验证
+
+### 配置加载
+- 创建 `InitializeConfig(flagSet *pflag.FlagSet, envPrefix string)` 函数
+- 返回 `confx.Loader[*Config]` 用于延迟加载
+- 在命令执行上下文中加载配置，而不是初始化时
+- 使用适当的错误包装处理配置错误
+
+### 命令组织模式
+- 使用变量声明 + 函数初始化模式定义命令
+- 在 `init()` 函数中注册子命令到 rootCmd
+- 配置加载器在命令初始化时创建，在执行时使用
+- 支持 `--config` 标志和环境变量前缀
+
+## 示例
+
+### main.go
+<example>
+```go
+package main
+
+import (
+    "log"
+    "github.com/spf13/cobra"
+)
+
+const (
+    flagConfig = "config"
+    envPrefix  = "ADEX_"
+)
+
+var rootCmd = &cobra.Command{
+    Use: "adex",
+}
+
+func main() {
+    if err := rootCmd.Execute(); err != nil {
+        log.Fatalf("Failed to execute command: %+v", err)
+    }
+}
+```
+</example>
+
+### config.go
+<example>
+```go
+package main
+
+import (
+    _ "embed"
+    "strings"
+    "time"
+    "github.com/pkg/errors"
+    "github.com/qor5/confx"
+    "github.com/spf13/pflag"
+)
+
+type Config struct {
+    Server   ServerConfig                `confx:"server"`
+    Database DatabaseConfig             `confx:"database"`
+}
+
+type ServerConfig struct {
+    Host string `confx:"host"`
+    Port string `confx:"port" validate:"required"`
+}
+
+type DatabaseConfig struct {
+    DSN string `confx:"dsn" validate:"required"`
+}
+
+//go:embed embed/default-config.yaml
+var defaultConfigYAML string
+
+func InitializeConfig(flagSet *pflag.FlagSet, envPrefix string) (confx.Loader[*Config], error) {
+    def, err := confx.Read[*Config]("yaml", strings.NewReader(defaultConfigYAML))
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to load default config from embedded YAML")
+    }
+    opts := []confx.Option{confx.WithEnvPrefix(envPrefix)}
+    if flagSet != nil {
+        opts = append(opts, confx.WithFlagSet(flagSet))
+    }
+    return confx.Initialize(def, opts...)
+}
+```
+</example>
+
+### server.go 命令模式
+<example>
+```go
+package main
+
+import (
+    "log"
+    "github.com/pkg/errors"
+    "github.com/qor5/confx"
+    "github.com/spf13/cobra"
+    "github.com/theplant/inject/lifecycle"
+)
+
+var serveCmd = func() *cobra.Command {
+    var confLoader confx.Loader[*Config]
+    var confPath string
+
+    cmd := &cobra.Command{
+        Use:   "serve",
+        RunE: func(cmd *cobra.Command, _ []string) error {
+            lc := lifecycle.New()
+            if err := lc.Provide(
+                lifecycle.SetupSignal,
+                func(ctx inject.Context) (*Config, error) {
+                    return confLoader(ctx, confPath)
+                },
+                // ... 其他 providers
+            ); err != nil {
+                return errors.Wrap(err, "failed to provide dependencies")
+            }
+            return lc.Serve(cmd.Context())
+        },
+    }
+
+    flagSet := cmd.Flags()
+    flagSet.SortFlags = false
+    flagSet.StringVar(&confPath, flagConfig, "", "Path to the configuration yaml file")
+
+    var err error
+    confLoader, err = InitializeConfig(flagSet, envPrefix)
+    if err != nil {
+        log.Fatalf("Failed to initialize config: %v", err)
+    }
+
+    return cmd
+}()
+
+func init() {
+    rootCmd.AddCommand(serveCmd)
+}
+```
+</example>
+
+### embed/default-config.yaml
+<example>
+```yaml
+# 应用默认配置
+server:
+  host: ""
+  port: "8080"
+  read_timeout: "30s"
+  write_timeout: "30s"
+
+database:
+  dsn: "user=app password=123 dbname=app_dev sslmode=disable host=localhost port=5432"
+
+email:
+  from_email_address: "noreply@example.com"
+  from_name: "App System"
+  configuration_set_name: ""
+  bcc_addresses: []
+  cc_addresses: []
+  reply_to_addresses: []
+```
+</example>
+
+<example type="invalid">
+```go
+// 不要直接使用环境变量
+port := os.Getenv("PORT")
+if port == "" {
+    port = "8080"
+}
+
+// 不要使用 viper 或其他配置库
+viper.SetDefault("server.port", "8080")
+viper.ReadInConfig()
+
+// 不要在 main 函数中处理配置
+func main() {
+    config := loadConfig() // 错误：应该在命令执行时加载
+    // ...
+}
+
+// 不要使用简单的函数定义命令
+func NewServeCmd() *cobra.Command {
+    return &cobra.Command{
+        Use: "serve",
+        Run: func(cmd *cobra.Command, args []string) {
+            // 错误：应该使用变量声明 + 函数初始化模式
+        },
+    }
+}
+```
+</example>

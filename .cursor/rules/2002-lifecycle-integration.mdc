@@ -1,0 +1,133 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Lifecycle 依赖注入集成
+
+<version>1.0.0</version>
+
+## 上下文
+- 构建具有多个服务和依赖项的 Go 应用程序时应用
+- 设置具有适当关闭处理的命令行应用程序时应用
+- 从手动依赖管理迁移到 DI 模式时应用
+
+## 要求
+
+### Provider 组织
+- 为所有依赖提供者创建单独的 `provider.go` 文件
+- 遵循参数顺序优先级：`ctx > lc > conf > others`
+- 对简单工厂函数使用 `create*` 前缀
+- 对管理生命周期的函数使用 `setup*` 前缀
+
+### Provider 函数模式
+- 简单提供者：`func createService(conf *Config) Service`
+- 生命周期提供者：`func setupService(lc *lifecycle.Lifecycle, conf *Config) Service`
+- 上下文提供者：`func setupClient(ctx inject.Context, lc *lifecycle.Lifecycle, conf *Config) Client`
+- 对初始化期间可能失败的提供者返回错误
+
+### 生命周期管理
+- 在 Provide 列表中首先使用 `lifecycle.SetupSignal` 进行信号处理
+- 在 setup 函数内使用 `lc.Add()` 添加服务到生命周期
+- 对 HTTP 服务器使用 `lifecycle.NewFuncService` 配合 `WithStop` 方法
+- 对仅清理的服务使用 `lifecycle.NewFuncActor` 配合 nil 启动函数
+- 在生命周期 actor 中包装资源清理（数据库客户端、连接）
+
+### 服务组合
+- 对复杂服务设置使用提供者切片：`var setupHTTPServer = []any{createHandler, setupServer}`
+- 通过函数参数链接依赖项，而不是全局变量
+- 使用 `var _ Interface = &Implementation{}` 验证接口实现
+
+### 命令结构
+- 使用 `lifecycle.New()` 初始化生命周期
+- 在命令执行上下文中延迟加载配置
+- 按依赖顺序使用 `lc.Provide()` 提供所有提供者
+- 调用 `lc.Serve(cmd.Context())` 启动所有服务
+
+## 示例
+
+<example>
+```go
+// provider.go
+func createDB(conf *Config, logger *Logger) (*gorm.DB, error) {
+    db, err := gorm.Open(postgres.Open(conf.Database.DSN), &gorm.Config{})
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to open database")
+    }
+    return db, nil
+}
+
+func setupBigQueryClient(ctx inject.Context, lc *lifecycle.Lifecycle, conf *Config) (*bigquery.Client, error) {
+    client, err := bigquery.NewClient(ctx, conf.BigQuery.ProjectID)
+    if err != nil {
+        return nil, errors.Wrap(err, "failed to create client")
+    }
+    
+    lc.Add(lifecycle.NewFuncActor(nil, func(_ context.Context) error {
+        return client.Close()
+    }).WithName("BigQueryClient"))
+    
+    return client, nil
+}
+
+func setupHTTPServer(lc *lifecycle.Lifecycle, conf *Config, handler http.Handler) *http.Server {
+    server := &http.Server{
+        Addr:    conf.Server.Host + ":" + conf.Server.Port,
+        Handler: handler,
+    }
+    
+    lc.Add(lifecycle.NewFuncService(func(ctx context.Context) error {
+        if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+            return errors.Wrap(err, "failed to listen and serve")
+        }
+        return nil
+    }).WithStop(server.Shutdown).WithName("HTTPServer"))
+    
+    return server
+}
+
+// 主命令
+func main() {
+    lc := lifecycle.New()
+    if err := lc.Provide(
+        lifecycle.SetupSignal,
+        func(ctx inject.Context) (*Config, error) {
+            return configLoader(ctx, configPath)
+        },
+        createLogger,
+        createDB,
+        setupBigQueryClient,
+        setupHTTPServer,
+    ); err != nil {
+        log.Fatal(err)
+    }
+    lc.Serve(context.Background())
+}
+```
+</example>
+
+<example type="invalid">
+```go
+// 不要手动管理服务
+func main() {
+    db := connectDB()
+    defer db.Close()
+    
+    server := &http.Server{}
+    go server.ListenAndServe()
+    
+    // 手动信号处理
+    c := make(chan os.Signal, 1)
+    signal.Notify(c, os.Interrupt)
+    <-c
+    server.Shutdown(context.Background())
+}
+
+// 不要使用全局变量作为依赖
+var globalDB *gorm.DB
+var globalClient *bigquery.Client
+
+// 不要忽略参数顺序
+func setupService(others string, conf *Config, lc *lifecycle.Lifecycle) {}
+```
+</example>
