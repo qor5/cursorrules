@@ -1,6 +1,6 @@
 ---
 description: 
-globs: 
+globs: *.go
 alwaysApply: false
 ---
 # Lifecycle 依赖注入集成

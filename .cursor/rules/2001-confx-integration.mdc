@@ -1,6 +1,6 @@
 ---
 description: 
-globs: 
+globs: *.go
 alwaysApply: false
 ---
 # Confx 配置集成
@@ -118,7 +118,7 @@ type DatabaseConfig struct {
 var defaultConfigYAML string
 
 func InitializeConfig(flagSet *pflag.FlagSet, envPrefix string) (confx.Loader[*Config], error) {
-    def, err := confx.Read[*Config]("yaml", strings.NewReader(defaultConfigYAML))
+    def, err := confx.Read[*Config](mdc:"yaml", strings.NewReader(defaultConfigYAML))
     if err != nil {
         return nil, errors.Wrap(err, "failed to load default config from embedded YAML")
     }
