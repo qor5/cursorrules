@@ -113,7 +113,6 @@ Before presenting code to the user, verify:
 
    - String enum naming follows conventions
    - JSON tags use camelCase
-   - JSON tag options handle omitempty appropriately
    - Interface implementations include validation declarations
    - Acronyms in identifiers use proper casing
 
