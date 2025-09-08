@@ -22,7 +22,7 @@ alwaysApply: false
 - Use `any` instead of `interface{}`
 - Include context.Context as first parameter in IO operations
 - Use github.com/pkg/errors for error handling
-- Wrap third-party and standard library errors, but not internal errors
+- Wrap third-party and standard library errors; do NOT re-wrap project-internal errors
 - Write acronyms in all uppercase in identifiers
 - Add type validation declarations for all interface implementations (e.g., `var _ InterfaceName = &ImplementationType{}`)
 
@@ -85,6 +85,7 @@ const (
 ### JSON Tag Naming
 
 <example>
+
 ```go
 type User struct {
     FirstName string `json:"firstName"`
@@ -92,10 +93,13 @@ type User struct {
     Email     string `json:"email"`
 }
 ```
+
 JSON tags should use camelCase to maintain consistency with JavaScript conventions.
+
 </example>
 
 <example type="invalid">
+
 ```go
 type User struct {
     FirstName string `json:"first_name"`
@@ -103,32 +107,41 @@ type User struct {
     Email     string `json:"email"`
 }
 ```
+
 Do not use snake_case for JSON tags.
+
 </example>
 
 <example type="invalid">
+
 ```go
 type Request struct {
 	SegmentID   string `json:"segmentId"`
 }
 ```
+
 Don't use mixed case for acronyms.
 Should use `segmentID` for this case.
+
 </example>
 
 <example type="invalid">
+
 ```go
 type Request struct {
     SESContent  string `json:"SESContent"`
 }
 ```
+
 Acronyms should be lowercase if they come at the beginning of a word.
 Should use `sesContent` for this case.
+
 </example>
 
 ### JSON Tag Options
 
 <example>
+
 ```go
 type Product struct {
     ID    string  `json:"id"`
@@ -137,10 +150,13 @@ type Product struct {
     Stock *int    `json:"stock"`
 }
 ```
+
 By default, omit the omitempty tag option for clarity and predictability.
+
 </example>
 
 <example type="invalid">
+
 ```go
 type Product struct {
     ID    string  `json:"id,omitempty"`
@@ -149,12 +165,15 @@ type Product struct {
     Stock *int    `json:"stock,omitempty"`
 }
 ```
+
 Don't use omitempty by default.
+
 </example>
 
 ### Type Declarations
 
 <example>
+
 ```go
 func ProcessData(data any) any {
     // Process data
@@ -163,11 +182,14 @@ func ProcessData(data any) any {
 
 var config map[string]any
 
-````
+```
+
 Use `any` type instead of `interface{}` for better readability in Go 1.18+.
+
 </example>
 
 <example type="invalid">
+
 ```go
 func ProcessData(data interface{}) interface{} {
     // Process data
@@ -175,14 +197,16 @@ func ProcessData(data interface{}) interface{} {
 }
 
 var config map[string]interface{}
-````
+```
 
 Avoid using `interface{}` as it's more verbose than `any`.
+
 </example>
 
 ### Context and Error Handling
 
 <example>
+
 ```go
 func FetchUserData(ctx context.Context, userID string) (*UserData, error) {
     // Database operation or API call
@@ -192,7 +216,9 @@ func FetchUserData(ctx context.Context, userID string) (*UserData, error) {
     return userData, nil
 }
 ```
+
 IO operations should include context as first parameter and return an error.
+
 </example>
 
 <example type="invalid">
@@ -211,6 +237,7 @@ Missing context parameter and unwrapped error in IO operation.
 ### Error Library Usage
 
 <example>
+
 ```go
 import (
     "github.com/pkg/errors"
@@ -230,11 +257,14 @@ return errors.Wrap(err, "reading file failed")
 
 }
 
-````
-Use github.com/pkg/errors for all error handling to provide stack traces.
+```
+
+Use github.com/pkg/errors to wrap external errors and provide stack traces. For newly created errors, use errors.New/Errorf. Do not re-wrap internal project errors.
+
 </example>
 
 <example type="invalid">
+
 ```go
 import (
     "errors"
@@ -253,14 +283,16 @@ func processFile(filename string) error {
 
     return nil
 }
-````
+```
 
 Don't use standard library errors or fmt.Errorf for error wrapping.
+
 </example>
 
 ### Error Wrapping
 
 <example>
+
 ```go
 // Standard library errors should be wrapped
 file, err := os.Open(path)
@@ -280,11 +312,14 @@ if err != nil {
 return err // Already wrapped appropriately
 }
 
-````
+```
+
 Wrap external errors but pass through internal errors to avoid double-wrapping.
+
 </example>
 
 <example type="invalid">
+
 ```go
 // Unwrapped standard library error
 file, err := os.Open(path)
@@ -303,33 +338,38 @@ data, err := fetchUserData(ctx, userID)
 if err != nil {
     return errors.Wrap(err, "failed to fetch user data")
 }
-````
+```
 
 Don't return unwrapped external errors or rewrap internal errors.
+
 </example>
 
 ### Acronym Naming
 
 <example>
+
 ```go
 type UserID string
 
-func GetHTTPClient() \*http.Client {
-// Return HTTP client
+func GetHTTPClient() *http.Client {
+    // Return HTTP client
 }
 
 type SMSNotification struct {
-ID string
-UserID string
-SMSBody string
-APISource string
+    ID string
+    UserID string
+    SMSBody string
+    APISource string
 }
 
-````
+```
+
 Acronyms (ID, HTTP, SMS, API) should be all uppercase in identifiers.
+
 </example>
 
 <example type="invalid">
+
 ```go
 type UserId string
 
@@ -338,19 +378,22 @@ func GetHttpClient() *http.Client {
 }
 
 type SmsNotification struct {
-    Id        string
-    UserId    string
-    SmsBody   string
+    Id string
+    UserId string
+    SmsBody string
     ApiSource string
 }
-````
+
+```
 
 Don't use mixed case for acronyms in identifiers.
+
 </example>
 
 ### Interface Implementation Validation
 
 <example>
+
 ```go
 // UserService interface definition
 type UserService interface {
@@ -384,12 +427,15 @@ var (
 
 // BigQueryDialect implements the SQLDialect interface
 type BigQueryDialect struct{}
+
 ```
 
 These type validation declarations ensure that implementation types correctly implement the interfaces, catching errors at compile time rather than runtime.
+
 </example>
 
 <example type="invalid">
+
 ```go
 // Missing interface implementation validation declaration
 type PostgresUserService struct {
@@ -406,9 +452,11 @@ func (s *PostgresUserService) FindByID(id string) (*User, error) {
 type SQLProcessor struct {
     dialect Dialect
 }
+
 ```
 
 Without type validation declarations, the compiler cannot verify at compile time whether types correctly implement interfaces, potentially leading to runtime errors.
+
 </example>
 
 ## Best Practices

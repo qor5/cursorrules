@@ -3,46 +3,59 @@ description:
 globs: *.md
 alwaysApply: false
 ---
+
 # 数据库设计标准
 
 <version>1.0.0</version>
 
 ## Context
+
 - 设计数据库表和 schema 时应用
-- 编写 SQL DDL 语句时应用  
+- 编写 SQL DDL 语句时应用
 - 创建数据库迁移文件时应用
 - 确保所有数据库设计工作的一致性
 
 ## Requirements
 
 ### 字段组织结构
+
 - 审计字段必须置顶：`id, created_at, updated_at, deleted_at`
 - 相关字段逻辑分组，使用注释分隔
 - 按顺序：审计字段 → 核心业务字段 → 关联字段 → 元数据字段
 
 ### 命名规范
+
 - 避免冗余前缀，如在 business 表中用 `title` 而不是 `business_title`
 - 使用 snake_case 命名
-- 外部业务ID使用 `external_id`，内表关联使用 `table_id`
+- 外部业务 ID 使用 `external_id`，内表关联使用 `table_id`
 - 上下文明确时使用简化名称：`type` 而不是 `business_type`
 
-### 数据类型约束  
-- 所有ID字段使用 `VARCHAR(50)` 提供格式灵活性
-- 最小化 `NULL` 字段，提供合理默认值
+### 数据类型约束
+
+- 所有 ID 字段使用 `VARCHAR(36)` 提供格式灵活性
+- 提供合理默认值，默认值为零值则不提供
 - 字符串字段：`NOT NULL DEFAULT ''`
-- JSONB字段：`NOT NULL DEFAULT '{}'`  
+- JSONB 字段：`NOT NULL DEFAULT '{}'`
 - 数值字段：`NOT NULL DEFAULT 0`
 - 时间字段：必须使用 `TIMESTAMPTZ` 而非 `TIMESTAMP`
 
 ### 软删除实现
+
 - 所有表必须包含 `deleted_at TIMESTAMPTZ` 字段
 - 唯一约束必须排除软删除：`WHERE deleted_at IS NULL`
 - 所有索引必须过滤软删除记录
 
 ### 约束策略
+
 - 禁用物理外键 `REFERENCES` 约束
 - 使用逻辑关联和注释说明关系
 - 索引都要包含软删除过滤条件
+
+### 主键策略
+
+- 强制使用单字段全局唯一标识符（如 UUID、XID、Snowflake）作为主键；禁止自增主键
+- 禁止联合主键（Composite Primary Key）；使用业务层唯一约束替代
+- 理由：避免查询时必须将联合唯一约束的所有字段都写入 WHERE，从而降低易错与维护成本；更利于分库分表、跨系统合并与未来分布式架构
 
 ## Examples
 
@@ -67,7 +80,7 @@ CREATE TABLE reward_businesses (
     UNIQUE(type, external_id) WHERE deleted_at IS NULL
 );
 
-CREATE INDEX idx_reward_businesses_user_id 
+CREATE INDEX idx_reward_businesses_user_id
 ON reward_businesses(user_id) WHERE deleted_at IS NULL;
 </example>
 
@@ -82,5 +95,5 @@ CREATE TABLE user_profile_table (
     UNIQUE(user_profile_type, user_profile_business_id)
 );
 
-问题：UUID类型ID、冗余前缀、NULL字段、无时区时间戳、物理外键、缺少软删除、审计字段不在顶部
+问题：UUID 类型 ID、冗余前缀、NULL 字段、无时区时间戳、物理外键、缺少软删除、审计字段不在顶部
 </example>

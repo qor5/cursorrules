@@ -69,10 +69,13 @@ var e error = func() *errFoo { return nil }()
   - String constant values should use SCREAMING_SNAKE_CASE (e.g., `const StatusActive = "STATUS_ACTIVE"`).
   - When constant values are used as configuration options, use kebab-case (e.g., `const ModeReadOnly = "read-only"`).
 - **Serialization and config naming**:
+
   - `json` struct tags and `confx` YAML config fields must use `camelCase`.
   - Preserve acronym capitalization (e.g., `json:"userID"`, `json:"readTimeoutMS"`). Avoid mixed forms like `userId`.
   - Third-party generated code or external system requirements are exempt.
   - Avoid `omitempty` unless strictly necessary.
+
+- **Types**: Prefer `any` over `interface{}` (Go 1.18+) for readability.
 
 <a id="configuration"></a>
 

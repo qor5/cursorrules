@@ -73,6 +73,8 @@ var e error = func() *errFoo { return nil }()
   - 非必要不使用 `omitempty`，避免隐藏逻辑错误。
 - 包名与 import alias 必须全小写；多词建议 snake_case（如 `user_service`），除非本就很清晰，例如：`ledgerv1`。
 
+- 类型别名：优先使用 `any` 而非 `interface{}`（Go 1.18+），提升可读性；
+
 <a id="configuration"></a>
 
 ## 4. 配置文件规范（confx）

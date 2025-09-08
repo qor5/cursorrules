@@ -3,19 +3,22 @@ description: FOLLOW naming convention standards when WRITING CODE to ENSURE read
 globs: **/*.{go,js,jsx,ts,tsx}
 alwaysApply: false
 ---
+
 # Naming Conventions
 
 ## Context
+
 - Applied when writing any code or documentation in the project
 - Applies to all variables, functions, methods, classes, interfaces, and comments
 
 ## Requirements
-- Always use English for code, comments, and documentation
+
 - Variable names should not end with numbers unless necessary (e.g., when distinguishing similar variables)
 - Use descriptive variable/function names that clearly express their purpose
 - Prioritize code readability first
 
 ## Examples
+
 <example>
 // Good
 const userProfile = fetchUserData();
