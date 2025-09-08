@@ -1,3 +1,9 @@
+---
+description: ALWAYS reference Team Development Standards during development to ensure consistency and maintainability
+globs: **/*
+alwaysApply: true
+---
+
 # 团队开发规范
 
 ## 目录
