@@ -43,7 +43,8 @@ alwaysApply: true
   - 新建错误使用 `errors.New`/`errors.Errorf`，保留错误起源。
   - 若能够保证错误已经记录了调用栈的前提下可直接透传。
 - 错误比较统一使用 `errors.Is`，禁止 `==` 比较。
-- gRPC 边界（方法实现或中间件）强制使用 `statusx`。注意 `statusx.Wrap` 若遇到已是 status 错误，会以底层 status 为准，避免多层包裹信息丢失或重复。
+- gRPC 边界（方法实现或中间件）强制使用 `statusx`，这样才能得到 错误消敏、错误翻译、标准化错误等等机制。
+  - 注意 `statusx.Wrap` 若遇到已是 status 错误，会以底层 status 为准的，多层包裹会被忽略。
 - 避免使用 `panic`/`log.Fatal`，优先返回 `error`。
 - 所有 goroutine 必须具备 `recover` 逻辑，避免进程级崩溃。
 - IO 方法签名：必须以 `ctx context.Context` 作为首参，并返回 `error`。
