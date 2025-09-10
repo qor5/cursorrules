@@ -40,8 +40,8 @@ alwaysApply: true
 
 - 错误包装策略：
   - 外部函数返回的错误必须使用 `github.com/pkg/errors`（如 `errors.Wrap`、`errors.WithStack`）。
-  - 新建错误使用 `errors.New`/`errors.Errorf`，保留错误起源。
-  - 若能够保证错误已经记录了调用栈的前提下可直接透传。
+  - 新建错误使用 `errors.New`/`errors.Errorf`，保留错误起源调用栈。
+  - 若能够保证错误已经记录了起源调用栈的前提下可直接透传，例如通常内部函数就不需要再次 `Wrap` 。
 - 错误比较统一使用 `errors.Is`，禁止 `==` 比较。
 - gRPC 边界（方法实现或中间件）强制使用 `statusx`，这样才能得到 错误消敏、错误翻译、标准化错误等等机制。
   - 注意 `statusx.Wrap` 若遇到已是 status 错误，会以底层 status 为准的，多层包裹会被忽略。
